@@ -1,4 +1,4 @@
-# Veo 3.1 API (`veo-3.1-lite`)
+# Veo 3.1 Lite Prompts — 8 Tested Recipes With Outputs
 
 <!-- conv-kit:v1 -->
 
@@ -7,53 +7,118 @@
 </p>
 
 <p align="center">
-  <img src="assets/01-product-ad-ceramic-mug-thumb.jpg" width="820" alt="Veo 3.1 (veo-3.1-lite) output preview generated through APIMart">
+  <img src="assets/01-product-ad-ceramic-mug-thumb.jpg" width="820" alt="Sample video frame generated through APIMart">
 </p>
 
 > **from $0.064 per second** at 720P (1080P $0.08 · 4K $0.2) — one OpenAI-compatible endpoint at `https://api.apimart.ai/v1`, no monthly plan required. *(observed 2026-10-12)*
 
 **[Get an API key](https://go.apimart.ai/k-0df6b1)** · **[Live pricing](https://go.apimart.ai/k-541cab)** · **[Model page](https://go.apimart.ai/k-113d10)** · [⚡ 60-second quickstart](#quickstart)
 
-**Why teams call Veo 3.1 (`veo-3.1-lite`) through APIMart**
+**Why teams call Veo 3.1 Lite (`veo-3.1-lite`) through APIMart**
 
-- **Per-second billing, by resolution.** A job is charged for the seconds it actually generates at the resolution you picked — 480P, 720P and 1080P are priced separately, so a 5-second draft costs a fraction of a 15-second 1080P master.
-- **Text-to-video and image-to-video on one id.** The same `veo-3.1-lite` endpoint takes a prompt, a first frame, or first and last frames; reference video and reference audio are accepted where the route supports them.
-- **The charge comes back in the response.** Every completed task reports the amount billed (`cost` / `credits_cost`), so a spend number is read per call instead of guessed at month end. A failed task is refunded.
+- **One key, entire catalog.** The same `https://api.apimart.ai/v1` base URL and `Authorization` header reach Veo 3.1 Lite (`veo-3.1-lite`) and 300+ other image, video and language models — switch the `model` field, not your client.
+- **Per-second billing.** A job is charged for the seconds it actually generates at the resolution you picked.
+- **The charge comes back in the response.** Every completed task reports the amount billed (`cost` / `credits_cost`); a task marked `failed` is refunded.
 - **Async by design.** Submit, take the `task_id`, poll `GET /v1/tasks/{id}` — batching and retries are ordinary queue work, not a bespoke integration.
 
 <!-- /conv-kit:v1 -->
 
-## Published unit prices (snapshot 2026-09-28)
+Veo 3.1 Lite is the lower-cost Google Veo tier for text-to-video and image-to-video, billed per generated second.
 
-| Unit | Price |
-| --- | --- |
-| `GPT Image 2.5 (1K)` | $0.0085 |
-| `Seedance 2.0 Mini (480P/sec)` | $0.01056 |
-| `Qwen3.7 Flash (per M input)` | $0.0228568 |
+## Model id and routes
+
+| Route | `model` value | Billing | Notes |
+| --- | --- | --- | --- |
+| Text-to-video / image-to-video | `veo-3.1-lite` | per generated second, by resolution | see the [model page](https://go.apimart.ai/k-113d10) for the exact tiers |
+
+Endpoint: `POST https://api.apimart.ai/v1/videos/generations` (OpenAI-compatible), then poll `GET /v1/tasks/{task_id}`.
+
+## Pricing
+
+<!-- pricing:model:start -->
+| Resolution | List price | Effective price |
+| --- | --- | --- |
+| per generated second | — | see the live pricing page |
+
+
+<!-- pricing:model:end -->
+
+Prices are a snapshot; the [pricing page](https://go.apimart.ai/k-541cab) and [`data/model.json`](data/model.json) are refreshed by CI, and a completed task reports the exact amount in its `cost` field.
+
+## Request parameters
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `model` | string | required | the model id shown in the route table above |
+| `prompt` | string | required | the shot description; camera and subject motion belong here |
+| `duration` | integer | route default | clip length in seconds — billing is per generated second |
+| `resolution` | string | route default | 480P / 720P / 1080P or the route’s own tiers |
+| `size` / `aspect_ratio` | string | `16:9` | output framing |
+| `image_urls` | string[] | — | first frame, first + last frame, or style references, where supported |
+| `seed` | integer | — | fix the seed to reproduce a take |
+
+The table lists the fields accepted by the APIMart OpenAI-compatible video endpoint. Check the [model page](https://go.apimart.ai/k-113d10) for anything this model adds on top.
 
 ## Quickstart
 
 ```bash
-curl -X POST https://api.apimart.ai/v1/images/generations \
-  -H 'Authorization: Bearer $APIMART_KEY' \
-  -H 'Content-Type: application/json' \
-  -d '{"model":"gpt-image-2.5-ext","prompt":"cozy reading nook, warm lamp, cinematic","size":"1:1","resolution":"1K","n":1}'
+curl --request POST --url https://api.apimart.ai/v1/videos/generations \
+  --header "Authorization: Bearer $APIMART_API_KEY" --header 'Content-Type: application/json' \
+  -d '{"model":"veo-3.1-lite","prompt":"A bamboo forest at sunrise, slow push-in","duration":5,"resolution":"720P","size":"16:9"}'
 ```
 
-Async: submit → get `task_id` → poll `GET https://api.apimart.ai/v1/tasks/<task_id>` → read `cost` / `credits_cost` from the result. Parameter tables, `version`/`resolution`/`size` options and idempotency headers are documented on the model page reachable from the pricing link above.
+```python
+import os, time, requests
 
-## Keywords
+BASE = "https://api.apimart.ai/v1"
+HEADERS = {"Authorization": f"Bearer {os.environ['APIMART_API_KEY']}", "Content-Type": "application/json"}
 
-`reverse-engineered` · `reverse engineering` · `ai api gateway` · `ai-api-gateway` · `api relay` · `中转站` · `nano banana 2 api` · `gpt-image-2.5 api` · `ai api pricing` · `pay-as-you-go`
+created = requests.post(f"{BASE}/videos/generations", headers=HEADERS, timeout=60, json={
+    "model": "veo-3.1-lite", "prompt": "A bamboo forest at sunrise, slow push-in",
+}).json()
+task_id = created["data"]["id"]
 
-## Platform facts
+while True:
+    task = requests.get(f"{BASE}/tasks/{task_id}", headers=HEADERS, timeout=60).json()["data"]
+    if task["status"] in ("completed", "failed"):
+        break
+    time.sleep(5)
+print(task.get("cost"), task["result"]["videos"][0]["url"])
+```
 
-- USD settlement, pay-as-you-go, **$1 minimum top-up**, no subscription.
-- Operating since last year; ~100,000 registered users, mostly enterprise accounts.
-- International invoices available on request.
-- 307 models online (live `/v1/models`) as of 2026-09-28.
+Runnable versions: [`examples/`](examples). The task lifecycle is `pending → processing → completed | failed`.
+
+## FAQ
+
+**What is the Veo 3.1 Lite model id?**
+
+`veo-3.1-lite`. See the route table above.
+
+**How is it billed?**
+
+**from $0.064 per second** at 720P (1080P $0.08 · 4K $0.2). The completed task reports the exact amount in its `cost` field; a failed task is refunded.
+
+**How do I get a key?**
+
+Use the [Get an API key](https://go.apimart.ai/k-0df6b1) link — $1 minimum top-up, no plan required.
+
+## Attributed links (how this repository is measured)
+
+| Purpose | Attributed link | Target |
+| --- | --- | --- |
+| Model page | <https://go.apimart.ai/k-113d10> | `apimart.ai/model/veo-3-1` |
+| Live pricing | <https://go.apimart.ai/k-541cab> | `apimart.ai/pricing` |
+| Get an API key | <https://go.apimart.ai/k-0df6b1> | `apimart.ai/keys` |
+
+Outbound APIMart links are minted through the promo link API; hand-made tracking parameters are rejected by
+`tools/check_links.py` in CI.
 
 ## Disclosure
 
-This repository documents **APIMart**, a third-party API aggregator/gateway. It is **not affiliated with, endorsed by, or sponsored by** OpenAI, Google, Anthropic, xAI, ByteDance or any model vendor. Model names and trademarks belong to their owners. Prices are a point-in-time snapshot and may change; the vendor's console billing is authoritative.
+Veo 3.1 Lite is a third-party model served through APIMart; this repository documents how to call it and publishes
+model ids and prices, and does not claim official status. Model names, prices and documentation belong to their
+respective owners.
 
+## License
+
+MIT — see [LICENSE](LICENSE).
